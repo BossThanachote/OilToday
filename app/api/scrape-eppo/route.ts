@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio';
 import { supabaseAdmin } from '@/lib/db';
 
 // --- ฟังก์ชันส่ง Line Notify ---
-// เปลี่ยนฟังก์ชันส่งเดิมเป็นตัวนี้
+
 async function sendLineMessage(message: string) {
   const token = process.env.LINE_ACCESS_TOKEN;
   const userId = process.env.LINE_USER_ID;
@@ -29,7 +29,7 @@ async function sendLineMessage(message: string) {
 
 export async function GET(request: Request) {
   try {
-    // 1. ความปลอดภัย: (คอมเมนต์ไว้ก่อนเพื่อกดมือทดสอบ)
+  
     /*
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
         const price = parseFloat(text);
         const brand = brands[index];
         
-        // เก็บเฉพาะข้อมูลที่มีราคาจริงๆ และมีชื่อน้ำมัน
+        
         if (brand && oilName && !isNaN(price) && price > 0) {
           scrapedData.push({ 
             brand, 
@@ -94,15 +94,15 @@ export async function GET(request: Request) {
       });
     });
 
-    // 2. บันทึกลง Supabase ด้วย upsert (ใช้ supabaseAdmin เพื่อข้าม RLS)
-    // หมายเหตุ: ในตาราง OilPrice ต้องตั้งค่า Unique Constraint ที่ column [brand, name] ไว้ด้วยครับ
+    // บันทึกลง Supabase ด้วย upsert 
+   
     const { error: dbError } = await supabaseAdmin
       .from('OilPrice')
       .upsert(scrapedData, { onConflict: 'brand,name' });
 
     if (dbError) throw new Error(`Database Error: ${dbError.message}`);
 
-    // 3. ✨ ส่งสรุปราคาเข้า Line
+    // ส่งสรุปราคาเข้า Line
     const gas95 = scrapedData.filter(o => o.name === 'แก๊สโซฮอล์ 95').sort((a,b) => a.price - b.price);
     const highlight = gas95[0];
 

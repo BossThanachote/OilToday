@@ -83,7 +83,7 @@ export default function OilExplorer({ initialData }: { initialData: OilPrice[] }
             </div>
 
             {viewMode === 'all' ? (
-                /* --- ✨ โหมดดูทั้งหมด (Grid 1-2-3 ปั๊ม) --- */
+                /* --- โหมดดูทั้งหมด  --- */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {Object.entries(groupedByBrand).map(([brand, items]) => {
                         const config = brandConfig[brand] || { logo: "", bgColor: "bg-slate-800", textColor: "text-white" };

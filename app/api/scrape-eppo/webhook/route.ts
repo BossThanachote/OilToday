@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db';
 
-// --- ฟังก์ชันสำหรับตอบกลับข้อความ (ใช้ Reply Token ฟรี 100%) ---
+// --- ฟังก์ชันสำหรับตอบกลับข้อความ  ---
 async function replyLineMessage(replyToken: string, messages: any[]) {
   const token = process.env.LINE_ACCESS_TOKEN;
   if (!token) return;
@@ -40,8 +40,8 @@ export async function POST(request: Request) {
         const userMessage = event.message.text.trim();
         const replyToken = event.replyToken;
 
-        // 🟢 Logic 1: เมื่อผู้ใช้พิมพ์ว่า "เช็คราคา"
-        if (userMessage === 'เช็คราคา') {
+        //  เมื่อผู้ใช้พิมพ์ว่า "เช็คราคา"
+        if (userMessage === 'เช็คราคา' || 'ราคาน้ำมันวันนี้' ) {
           // ดึงข้อมูลจากฐานข้อมูล (ตัวอย่าง: เอาเฉพาะ แก๊สโซฮอล์ 95 มาโชว์เทียบกัน)
           const { data: oilPrices } = await supabaseAdmin
             .from('OilPrice')
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
             ]
           }));
 
-          // โครงสร้าง Flex Message สวยๆ
+          // โครงสร้าง Flex Message 
           const flexMessage = {
             type: "flex",
             altText: "ราคาน้ำมันแก๊สโซฮอล์ 95 วันนี้",
@@ -107,11 +107,11 @@ export async function POST(request: Request) {
           await replyLineMessage(replyToken, [flexMessage]);
         } 
         
-        // 🟢 Logic 2: เมื่อผู้ใช้พิมพ์คำว่า "เมนู" หรืออื่นๆ
+        // เมื่อผู้ใช้พิมพ์คำว่า "เมนู" หรืออื่นๆ
         else if (userMessage === 'เมนู' || userMessage === 'ช่วยเหลือ') {
           await replyLineMessage(replyToken, [{ 
             type: 'text', 
-            text: 'ผมคือ OilToday Bot 🤖\nลองพิมพ์คำว่า "เช็คราคา" เพื่อดูราคาน้ำมันล่าสุดได้เลยครับ!' 
+            text: 'ผมคือ OilToday Bot 🤖\nลองพิมพ์คำว่า "เช็คราคา" หรือว่า "ช่วยเหลือ" เพื่อดูราคาน้ำมันล่าสุดได้เลยครับ!' 
           }]);
         }
         
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
         else {
           await replyLineMessage(replyToken, [{ 
             type: 'text', 
-            text: 'ขออภัยครับ ผมยังไม่เข้าใจคำสั่งนี้ ลองพิมพ์ "เช็คราคา" ดูนะครับ ⛽' 
+            text: 'ขออภัยครับ ผมยังไม่เข้าใจคำสั่งนี้ ลองพิมพ์ "เมนู" ดูนะครับ ⛽' 
           }]);
         }
       }

@@ -3,13 +3,12 @@ import OilExplorer from "./components/OilExplorer";
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // 1. ดึงข้อมูลจาก Supabase โดยตรง (ไม่ผ่าน Prisma แล้ว)
+  // 1. ดึงข้อมูลจาก Supabase 
   const { data: oilPrices, error } = await supabase
     .from('OilPrice')
     .select('*')
     .order('updatedAt', { ascending: false });
 
-  // กรณีเกิด Error ในการดึงข้อมูล
   if (error) {
     console.error("Supabase Fetch Error:", error.message);
   }
@@ -32,7 +31,6 @@ export default async function HomePage() {
 
         {/* --- Content Area --- */}
         {!hasData ? (
-          // กรณีไม่มีข้อมูล แสดง UI สวยๆ บอกให้ไปดึงข้อมูลก่อน
           <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-16 text-center max-w-2xl mx-auto shadow-sm">
             <div className="mx-auto w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-4xl">
               🛢️
@@ -46,7 +44,7 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          // ✨ กรณีมีข้อมูล ส่งให้ Client Component (OilExplorer) จัดการต่อ
+          // กรณีมีข้อมูล ส่งให้ Client Component (OilExplorer) จัดการต่อ
           <OilExplorer initialData={oilPrices} />
         )}
 
