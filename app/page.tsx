@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import OilExplorer from "./components/OilExplorer"; // ตรวจสอบ path ของ component นี้ให้ถูกต้องนะครับ
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   // 1. ดึงข้อมูลจาก Database (เรียงตามอัปเดตล่าสุด)

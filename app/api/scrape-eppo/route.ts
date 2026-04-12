@@ -25,10 +25,10 @@ export async function GET(request: Request) {
   try {
     // 1. ความปลอดภัย: เช็ค Secret Key (สำหรับ Cron Job บน Vercel)
     // ถ้าคุณจะทดสอบ "กดมือ" ให้คอมเมนต์ 3 บรรทัดข้างล่างนี้ออกก่อนครับ
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+    // const authHeader = request.headers.get('authorization');
+    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    //   return new NextResponse('Unauthorized', { status: 401 });
+    // }
 
     const url = 'https://www.eppo.go.th/epposite/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php';
     
