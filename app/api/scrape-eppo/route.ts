@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
-import { db } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/db';
 
 // --- ฟังก์ชันส่ง Line Notify ---
 async function sendLineNotify(message: string) {
-  const token = process.env.LINE_TOKEN; // ใส่ใน .env
+  const token = process.env.LINE_TOKEN;
   if (!token) return;
 
   try {
@@ -23,12 +23,13 @@ async function sendLineNotify(message: string) {
 
 export async function GET(request: Request) {
   try {
-    // 1. ความปลอดภัย: เช็ค Secret Key (สำหรับ Cron Job บน Vercel)
-    // ถ้าคุณจะทดสอบ "กดมือ" ให้คอมเมนต์ 3 บรรทัดข้างล่างนี้ออกก่อนครับ
-    // const authHeader = request.headers.get('authorization');
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //   return new NextResponse('Unauthorized', { status: 401 });
-    // }
+    // 1. ความปลอดภัย: (คอมเมนต์ไว้ก่อนเพื่อกดมือทดสอบ)
+    /*
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    */
 
     const url = 'https://www.eppo.go.th/epposite/templates/eppo_v15_mixed/eppo_oil/eppo_oil_gen_new.php';
     
@@ -71,37 +72,51 @@ export async function GET(request: Request) {
 
       const priceColumns = $(row).find('.oil_price_colum');
       priceColumns.each((index, col) => {
-        const price = parseFloat($(col).text().trim());
+        const text = $(col).text().trim();
+        const price = parseFloat(text);
         const brand = brands[index];
-        if (brand && oilName && !isNaN(price)) {
-          scrapedData.push({ brand, name: oilName, price });
+        
+        // เก็บเฉพาะข้อมูลที่มีราคาจริงๆ และมีชื่อน้ำมัน
+        if (brand && oilName && !isNaN(price) && price > 0) {
+          scrapedData.push({ 
+            brand, 
+            name: oilName, 
+            price,
+            updatedAt: new Date().toISOString() // เพิ่มเวลาอัปเดต
+          });
         }
       });
     });
 
-    // 2. บันทึกลง Database
-    for (const item of scrapedData) {
-      await db.oilPrice.upsert({
-        where: { brand_name: { brand: item.brand, name: item.name } },
-        update: { price: item.price },
-        create: { brand: item.brand, name: item.name, price: item.price }
-      });
-    }
+    // 2. บันทึกลง Supabase ด้วย upsert (ใช้ supabaseAdmin เพื่อข้าม RLS)
+    // หมายเหตุ: ในตาราง OilPrice ต้องตั้งค่า Unique Constraint ที่ column [brand, name] ไว้ด้วยครับ
+    const { error: dbError } = await supabaseAdmin
+      .from('OilPrice')
+      .upsert(scrapedData, { onConflict: 'brand,name' });
 
-    // 3. ✨ ส่งสรุปราคาเข้า Line (เลือกตัวที่ยอดนิยมมาโชว์)
-    const highlight = scrapedData.filter(o => o.name === 'แก๊สโซฮอล์ 95').sort((a,b) => a.price - b.price)[0];
+    if (dbError) throw new Error(`Database Error: ${dbError.message}`);
+
+    // 3. ✨ ส่งสรุปราคาเข้า Line
+    const gas95 = scrapedData.filter(o => o.name === 'แก๊สโซฮอล์ 95').sort((a,b) => a.price - b.price);
+    const highlight = gas95[0];
+
     let lineMsg = `\n⛽ อัปเดตราคาน้ำมันสำเร็จ!\n📅 วันที่: ${new Date().toLocaleDateString('th-TH')}\n`;
     if (highlight) {
-      lineMsg += `\n🎯 แนะนำวันนี้:\n${highlight.name} ที่ถูกที่สุดคือปั๊ม [${highlight.brand}] ราคา ${highlight.price} บาท`;
+      lineMsg += `\n🎯 แนะนำวันนี้:\n${highlight.name} ถูกสุดคือ [${highlight.brand}] ราคา ${highlight.price} บาท`;
     }
-    lineMsg += `\n\nเช็คราคาครบทุกปั๊มได้ที่: ${process.env.NEXT_PUBLIC_SITE_URL}`;
+    lineMsg += `\n\nเช็คราคาล่าสุด: ${process.env.NEXT_PUBLIC_SITE_URL || 'บนหน้าเว็บของคุณ'}`;
 
     await sendLineNotify(lineMsg);
 
-    return NextResponse.json({ success: true, count: scrapedData.length });
+    return NextResponse.json({ 
+      success: true, 
+      message: "Data updated successfully",
+      count: scrapedData.length 
+    });
 
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown Error";
+    console.error("Scrape Error:", msg);
     await sendLineNotify(`❌ ระบบดึงข้อมูลผิดพลาด: ${msg}`);
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
