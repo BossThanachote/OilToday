@@ -3,21 +3,27 @@ import * as cheerio from 'cheerio';
 import { supabaseAdmin } from '@/lib/db';
 
 // --- ฟังก์ชันส่ง Line Notify ---
-async function sendLineNotify(message: string) {
-  const token = process.env.LINE_TOKEN;
-  if (!token) return;
+// เปลี่ยนฟังก์ชันส่งเดิมเป็นตัวนี้
+async function sendLineMessage(message: string) {
+  const token = process.env.LINE_ACCESS_TOKEN;
+  const userId = process.env.LINE_USER_ID;
+
+  if (!token || !userId) return;
 
   try {
-    await fetch('https://notify-api.line.me/api/notify', {
+    await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: new URLSearchParams({ message }),
+      body: JSON.stringify({
+        to: userId,
+        messages: [{ type: 'text', text: message }],
+      }),
     });
   } catch (err) {
-    console.error("Line Notify Error:", err);
+    console.error("LINE Messaging API Error:", err);
   }
 }
 
@@ -106,7 +112,7 @@ export async function GET(request: Request) {
     }
     lineMsg += `\n\nเช็คราคาล่าสุด: ${process.env.NEXT_PUBLIC_SITE_URL || 'บนหน้าเว็บของคุณ'}`;
 
-    await sendLineNotify(lineMsg);
+    await sendLineMessage(lineMsg);
 
     return NextResponse.json({ 
       success: true, 
@@ -117,7 +123,7 @@ export async function GET(request: Request) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown Error";
     console.error("Scrape Error:", msg);
-    await sendLineNotify(`❌ ระบบดึงข้อมูลผิดพลาด: ${msg}`);
+    await sendLineMessage(`❌ ระบบดึงข้อมูลผิดพลาด: ${msg}`);
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
