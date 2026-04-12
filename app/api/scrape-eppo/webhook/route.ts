@@ -115,7 +115,7 @@ export async function POST(request: Request) {
           }]);
         }
         
-        // 🟢 Logic 3: พิมพ์อย่างอื่นที่ Bot ไม่รู้จัก
+        // พิมพ์อย่างอื่นที่ Bot ไม่รู้จัก
         else {
           await replyLineMessage(replyToken, [{ 
             type: 'text', 
