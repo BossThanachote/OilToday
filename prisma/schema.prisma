@@ -1,13 +1,29 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
+
+model LineSubscriber {
+  id        Int      @id @default(autoincrement())
+  lineId    String   @unique
+  type      String   // "user" หรือ "group"
+  createdAt DateTime @default(now())
+}
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  // ไม่ต้องใส่ url ตรงนี้ เพราะเราตั้งไว้ใน prisma.config.ts แล้ว (Prisma 7+)
 }
+
+model OilPrice {
+  id        Int      @id @default(autoincrement())
+  brand     String   
+  name      String   
+  price     Float    
+  updatedAt DateTime @updatedAt
+
+  @@unique([brand, name]) 
+}
+
+// (ถ้าคุณมี model LineSubscriber จากตอนแรกที่เคยทำไว้ ก็ปล่อยไว้ด้านล่างนี้ได้เลยนะครับ อย่าลบทิ้ง)
